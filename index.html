@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transmission</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue','Segoe UI',Roboto,Arial,sans-serif;font-size:14px;color:#1a1a1a;background:#fff}
+a{text-decoration:none;color:inherit;cursor:pointer}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input,select,textarea{font-family:inherit;outline:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+#app{display:flex;flex-direction:column;height:100vh}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);pointer-events:none}
+
+/* ===== NAV ===== */
+.topnav{height:48px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;z-index:50}
+.topnav-left{display:flex;align-items:center;height:100%}
+.topnav-right{display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;margin-right:24px;cursor:pointer}
+.brand svg{width:26px;height:26px}
+.nav-links{display:flex;align-items:center;height:100%}
+.nl{padding:0 12px;height:100%;display:flex;align-items:center;font-size:14px;font-weight:500;color:#6b7280;cursor:pointer;gap:4px;position:relative}
+.nl:hover{color:#374151}
+.nl.active{color:#10b981;font-weight:600}
+.nl .c{font-size:8px;margin-left:1px}
+.has-dd{position:relative;display:flex;align-items:stretch;height:100%}
+.dd{position:absolute;top:100%;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.1);min-width:140px;z-index:300;display:none;padding:4px 0}
+.dd.open{display:block}
+.dd a{display:block;padding:8px 14px;font-size:13px;color:#374151}
+.dd a:hover{background:#f3f4f6}
+.dd a.dd-active{color:#10b981;font-weight:600}
+.nav-search{position:relative;width:220px}
+.nav-search input{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:7px 12px 7px 32px;font-size:13px;color:#374151}
+.nav-search input::placeholder{color:#9ca3af}
+.nav-search input:focus{border-color:#10b981}
+.nav-search .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af}
+.bell{position:relative;cursor:pointer;display:flex;align-items:center}
+.bell svg{width:20px;height:20px;color:#6b7280}
+.bell-b{position:absolute;top:-4px;right:-8px;background:#10b981;color:#fff;font-size:9.5px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:18px;text-align:center;line-height:1.5}
+.user-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:14px;color:#374151;font-weight:500}
+.user-dd{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:200px;z-index:300;padding:4px 0;display:none}
+.user-dd.open{display:block}
+.user-dd a{display:block;padding:8px 16px;font-size:13px;color:#374151}
+.user-dd a:hover{background:#f3f4f6}
+.user-dd hr{border:none;border-top:1px solid #e5e7eb;margin:4px 0}
+
+/* ===== TZ BANNER ===== */
+.tz{background:#fffbeb;border-bottom:1px solid #fde68a;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#92400e;flex-shrink:0}
+.tz.hid{display:none}
+.tz-inner{display:flex;align-items:center;gap:10px}
+.tz-x{font-size:18px;color:#92400e;cursor:pointer;padding:2px 6px}
+
+/* ===== VIEW ===== */
+#view{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* ===== SHARED ===== */
+.tb{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid #e5e7eb;flex-shrink:0;background:#fff;overflow-x:auto;white-space:nowrap}
+.fi-wrap{position:relative;flex-shrink:0}
+.fi-wrap .fi-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px}
+.fi{border:1px solid #d1d5db;border-radius:6px;padding:6px 10px 6px 30px;font-size:13px;width:150px;background:#fff;color:#374151}
+.fi::placeholder{color:#9ca3af}
+.fi:focus{border-color:#10b981}
+.fb{display:inline-flex;align-items:center;gap:4px;border:1px solid #d1d5db;border-radius:6px;padding:6px 12px;font-size:13px;color:#374151;background:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.fb:hover{background:#f9fafb;border-color:#b0b8c4}
+.fb .caret{font-size:8px;color:#9ca3af}
+.btn-o{border:1px solid #d1d5db;border-radius:6px;padding:7px 16px;font-size:13px;color:#374151;background:#fff;font-weight:500}
+.btn-o:hover{background:#f9fafb}
+.btn-g{border:none;border-radius:6px;padding:8px 18px;font-size:13px;color:#fff;background:#10b981;font-weight:600}
+.btn-g:hover{background:#059669}
+.btn-sched{border:1px solid #10b981;border-radius:6px;padding:6px 14px;font-size:13px;color:#10b981;font-weight:500;background:#fff;cursor:pointer}
+.btn-sched:hover{background:#f0fdf4}
+.complete-t{color:#10b981;font-weight:600;font-size:13px}
+.dash{color:#d1d5db}
+.pencil{color:#9ca3af;font-size:12px;margin-left:4px}
+.empty-ctr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.empty-ctr h2{font-size:18px;font-weight:700;color:#1f2937;margin-top:16px}
+.empty-ctr p{font-size:13px;color:#9ca3af;margin-top:4px}
+.mag{width:130px;height:130px}
+.spinner{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#10b981;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== LOADS TABLE ===== */
+.table-wrap{flex:1;overflow:auto;background:#fff}
+table.loads{width:max-content;min-width:100%;border-collapse:collapse}
+table.loads thead{position:sticky;top:0;z-index:10}
+table.loads thead th{padding:8px 14px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;background:#f9fafb;border-bottom:1px solid #e5e7eb;white-space:nowrap;cursor:pointer;user-select:none}
+table.loads thead th:hover{color:#1f2937}
+table.loads thead th.col-rfp{background:#e6f7f0}
+table.loads thead th.col-gear{cursor:default;text-align:center}
+table.loads tbody tr{border-bottom:1px solid #f3f4f6;transition:background .1s;cursor:pointer}
+table.loads tbody tr:hover{background:#f9fafb}
+table.loads tbody td{padding:14px 14px;font-size:13px;color:#374151;white-space:nowrap;vertical-align:middle}
+table.loads tbody td.td-rfp{background:#f0faf5}
+.flex-cell{display:flex;align-items:flex-start;gap:8px}
+.g-dot{width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;margin-top:5px}
+.g-dot.inv{background:transparent}
+.flex-link{font-size:13px;font-weight:600;color:#2563eb;cursor:pointer}
+.flex-link:hover{text-decoration:underline}
+.cont-id{font-size:12px;color:#9ca3af;margin-top:2px}
+.na-t{color:#9ca3af}
+.na-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#9ca3af;color:#fff;font-size:9px;font-weight:700;margin-left:4px;vertical-align:middle}
+.d-sub{display:block;font-size:11px;color:#9ca3af;margin-top:1px}
+.d-grn{color:#10b981;font-weight:500}
+.loc-m{font-weight:500}
+.loc-s{display:block;font-size:11px;color:#9ca3af;margin-top:1px}
+.chev{color:#d1d5db;font-size:16px;padding:4px 6px;cursor:pointer;border-radius:4px}
+.chev:hover{color:#6b7280;background:#f3f4f6}
+.ms-panel{margin-left:auto;display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;color:#10b981;font-size:13px}
+.ms-panel .perc{font-size:22px;font-weight:700;line-height:1}
+.ms-panel .sub{font-size:11px;color:#9ca3af}
+.ms-lbl{font-size:12px;color:#10b981;font-weight:500}
+
+/* ===== INVOICES ===== */
+.inv-shell{display:flex;flex:1;overflow:hidden}
+.icon-tabs{width:38px;background:#f9fafb;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;flex-shrink:0}
+.it{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#9ca3af;cursor:pointer}
+.it:hover{background:#e5e7eb;color:#374151}
+.it.active{color:#10b981;background:#ecfdf5}
+.it.dark{background:#374151;color:#fff;border-radius:50%;font-size:11px;font-weight:700;width:26px;height:26px;margin-top:4px}
+.status-side{width:220px;border-right:1px solid #e5e7eb;flex-shrink:0;padding:16px 0;display:none}
+.status-side.show{display:block}
+.status-side h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;padding:0 16px;margin-bottom:12px}
+.si-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font-size:14px;cursor:pointer;color:#374151;border-left:3px solid transparent}
+.si-row:hover{background:#f3f4f6}
+.si-row.active{background:#eff6ff;border-left-color:#10b981;font-weight:700;color:#10b981}
+.si-row .cnt{font-weight:600;font-size:13px;color:#9ca3af}
+.si-row.active .cnt{color:#10b981;background:#d1fae5;border-radius:10px;padding:1px 8px;font-size:12px}
+.inv-list{width:280px;border-right:1px solid #e5e7eb;overflow-y:auto;flex-shrink:0;display:none}
+.inv-list.show{display:block}
+.inv-list-hdr{padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;border-bottom:1px solid #f3f4f6;position:sticky;top:0;background:#fff;z-index:2}
+.inv-item{padding:10px 14px;border-bottom:1px solid #f3f4f6;cursor:pointer}
+.inv-item:hover{background:#f9fafb}
+.inv-item.selected{background:#ecfdf5;border-left:3px solid #10b981}
+.inv-item-name{font-size:13px;font-weight:600;color:#374151}
+.inv-item-flex{font-size:12px;color:#9ca3af;margin-top:1px}
+.inv-detail{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.inv-tb{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px;border-bottom:1px solid #e5e7eb;flex-shrink:0}
+
+/* Invoice detail */
+.banner{padding:12px 16px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;line-height:1.5}
+.banner-info{background:#eff6ff}
+.banner-err{background:#fef2f2;border:1.5px solid #fca5a5;border-radius:6px;margin:12px 16px;color:#991b1b;font-weight:500}
+.banner-x{margin-left:auto;color:#9ca3af;cursor:pointer;font-size:16px;flex-shrink:0}
+.banner a{color:#10b981;font-weight:500;text-decoration:underline}
+.inv-header{padding:16px 20px;border-bottom:1px solid #e5e7eb;position:relative}
+.inv-name{font-size:22px;font-weight:700;color:#10b981;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.inv-name .ed{font-size:14px;cursor:pointer}
+.inv-flexid{font-size:13px;color:#6b7280;margin-bottom:2px}
+.inv-meta{font-size:13px;color:#6b7280;margin-bottom:2px}
+.inv-due-tag{background:#f3f4f6;border-radius:12px;padding:2px 10px;font-size:11px;color:#6b7280;display:inline-flex;align-items:center;gap:4px}
+.inv-acts{position:absolute;top:16px;right:20px;display:flex;gap:8px}
+.btn-del{border:1px solid #fca5a5;border-radius:6px;padding:7px 14px;font-size:13px;color:#ef4444;background:#fff;font-weight:500;display:flex;align-items:center;gap:5px}
+.btn-del:hover{background:#fef2f2}
+.btn-send{border:none;border-radius:6px;padding:8px 20px;font-size:13px;color:#fff;background:#10b981;font-weight:600}
+.btn-send:hover{background:#059669}
+.bill-sec{padding:14px 20px;border-bottom:1px solid #e5e7eb}
+.bill-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.bill-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.bill-dot.from{background:#1f2937}
+.bill-dot.to{border:2px solid #6b7280;background:#fff}
+.info-msg{padding:12px 20px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280;display:flex;align-items:center;gap:8px}
+.content-split{display:flex;flex:1;min-height:0}
+.content-left{flex:1;overflow-y:auto;border-right:1px solid #e5e7eb}
+.content-right{width:420px;overflow-y:auto;flex-shrink:0}
+.section{padding:18px 20px;border-bottom:1px solid #e5e7eb}
+.section-title{font-size:16px;font-weight:700;color:#1f2937;margin-bottom:14px}
+.route-line{display:flex;align-items:center;margin-bottom:16px}
+.route-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.route-dot.pk{background:#1f2937}
+.route-dot.dl{border:2px solid #6b7280;background:#fff}
+.route-bar{flex:1;height:2px;background:#d1d5db;margin:0 4px}
+.route-lbl{font-size:11px;color:#6b7280;margin:0 4px}
+.route-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.route-col h4{font-size:14px;font-weight:700;color:#1f2937;margin-bottom:6px}
+.route-col .addr{font-size:12.5px;color:#6b7280;line-height:1.5}
+.verified{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:#374151}
+.feat{font-size:12.5px;color:#374151;display:flex;align-items:center;gap:6px;margin-top:4px}
+.ship-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ship-lbl{font-size:12px;color:#6b7280;margin-bottom:2px}
+.ship-val{font-size:14px;color:#1f2937;font-weight:500}
+.rd-table{width:100%;border-collapse:collapse;margin-top:8px}
+.rd-table th{text-align:left;font-size:12px;font-weight:600;color:#6b7280;padding:8px 0;border-bottom:1px solid #e5e7eb}
+.rd-table td{font-size:13px;color:#374151;padding:10px 0;border-bottom:1px solid #f3f4f6}
+.rd-table td a{color:#2563eb;font-weight:500;cursor:pointer}
+
+/* Right panel line items */
+.col-hdr{display:flex;padding:8px 16px;font-size:12px;font-weight:600;color:#67768d;border-bottom:1px solid #e5e7eb}
+.col-hdr .c-item{flex:0 0 30%;padding-left:2%}
+.col-hdr .c-qty{flex:1;text-align:right}
+.col-hdr .c-rate{flex:0 0 80px;text-align:right}
+.col-hdr .c-charge{flex:0 0 100px;text-align:right;padding-right:1%}
+.col-hdr .c-act{flex:0 0 60px}
+.cnt-grp{padding:12px 16px 4px}
+.cnt-chk{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.cnt-chk input[type=checkbox]{width:18px;height:18px;accent-color:#10b981;cursor:pointer}
+.cnt-chk label{font-size:14px;color:#39414d;cursor:pointer}
+.cnt-st{font-size:12px;color:#67768d;margin-left:26px;margin-bottom:8px}
+.li-card{border:1px solid #c5d2e7;margin:0 0 10px;overflow:hidden}
+.li-body{display:flex;align-items:flex-start;padding:12px 10px}
+.li-left{flex:0 0 30%;padding:0 8px}
+.li-left .li-nm{font-size:14px;color:#1f2937}
+.li-left .li-ct{font-size:12px;color:#67768d;margin-top:2px}
+.li-mid{flex:1}
+.li-rt{display:flex;align-items:flex-start;gap:8px}
+.li-rv{text-align:right}
+.li-rv .val{font-size:14px;color:#1f2937}
+.li-rv .unit{font-size:12px;color:#67768d}
+.li-ch{text-align:right;min-width:90px}
+.li-ch .amt{font-size:14px;color:#1f2937}
+.li-icons{display:flex;flex-direction:column;gap:4px;margin-left:6px}
+.li-icons button{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;border:none;background:transparent;cursor:pointer}
+.li-icons .del{color:#c0392b}
+.li-icons .del:hover{background:#fef2f2}
+.li-icons .edt{color:#10b981}
+.li-icons .edt:hover{background:#ecfdf5}
+.li-ft{padding:6px 10px;background:#f7f8fa;font-size:12px;color:#67768d}
+.total-bar{display:flex;justify-content:flex-end;margin:12px 16px 16px}
+.total-bar .t-lbl{background:#f7f8fa;padding:10px 16px;font-size:16px;font-weight:700;color:#1f2937;border-radius:4px 0 0 4px;display:flex;align-items:center}
+.total-bar .t-amt{background:#39414d;color:#fff;padding:10px 20px;font-size:16px;font-weight:700;border-radius:0 4px 4px 0;text-align:right}
+.total-bar .t-amt .usd-lbl{display:block;font-size:11px;color:#bbb}
+
+/* ===== WORKFLOWS ===== */
+.wf-shell{display:flex;flex:1;overflow:hidden}
+.wf-side{width:200px;border-right:1px solid #e5e7eb;overflow-y:auto;flex-shrink:0;padding:8px 0}
+.wf-item{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;font-size:13px;color:#6b7280;cursor:pointer}
+.wf-item:hover{background:#f3f4f6}
+.wf-item.active{font-weight:700;color:#1f2937}
+
+/* ===== RATES ===== */
+.rates-form{padding:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;border-bottom:1px solid #e5e7eb}
+.rf{display:flex;flex-direction:column;gap:4px;min-width:140px}
+.rf label{font-size:12px;font-weight:600;color:#6b7280}
+.rf input,.rf select{border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;font-size:13px;color:#374151;background:#fff}
+.rf input:focus,.rf select:focus{border-color:#10b981}
+.mode-tag{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:4px;padding:4px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px}
+
+/* ===== REPORTS 403 ===== */
+.r403{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.r403 h1{font-size:64px;font-weight:700;color:#d1d5db}
+.r403 h2{font-size:18px;font-weight:600;color:#374151;margin-top:8px}
+.r403 p{font-size:13px;color:#9ca3af;margin-top:6px}
+
+/* ===== MODAL ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:#fff;border-radius:10px;width:480px;max-width:95vw;max-height:85vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);display:flex;flex-direction:column}
+.modal-hdr{padding:14px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h3{font-size:15px;font-weight:700}
+.mc{font-size:18px;color:#9ca3af;cursor:pointer;padding:4px 8px}
+.modal-bod{padding:18px 20px;overflow-y:auto;flex:1}
+.modal-ft{padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px}
+.ff{margin-bottom:14px}
+.ff label{display:block;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px}
+.ff input,.ff select,.ff textarea{width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px 10px;font-size:13px;color:#374151;background:#fff}
+.ff textarea{min-height:60px;resize:vertical}
+</style>
+</head>
+<body>
+<div id="toast" hidden></div>
+<div id="app">
+<nav class="topnav">
+  <div class="topnav-left">
+    <a class="brand" onclick="go('/loads')"><svg viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="13" fill="#10b981"/><path d="M7.5 9.5C7.5 9.5 9.5 7 13 7s5.5 2.5 5.5 2.5" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M7.5 16.5C7.5 16.5 9.5 19 13 19s5.5-2.5 5.5-2.5" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="13" cy="13" r="2.3" stroke="#fff" stroke-width="1.7"/></svg></a>
+    <div class="nav-links">
+      <div class="has-dd"><a class="nl" id="loadsNL" data-nav="loads" onclick="toggleDD(event)">Loads <span class="c">▾</span></a><div class="dd" id="loadsDd"><a onclick="go('/loads')">Loads</a><a onclick="go('/requests')">Requests</a></div></div>
+      <a class="nl" data-nav="invoices" onclick="go('/invoices')">Invoices</a>
+      <a class="nl" data-nav="rates" onclick="go('/rates')">Rates</a>
+      <a class="nl" data-nav="reports" onclick="go('/reports')">Reports</a>
+      <a class="nl" data-nav="workflows" onclick="go('/workflows')">Workflows</a>
+    </div>
+  </div>
+  <div class="topnav-right">
+    <div class="nav-search"><svg class="si" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input placeholder="Search..." id="globalSearch"></div>
+    <div class="bell" onclick="toast('87 notifications')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="bell-b">87</span></div>
+    <div style="position:relative"><div class="user-toggle" onclick="document.getElementById('userDd').classList.toggle('open')">Sherry Swartz <span class="c">▾</span></div><div class="user-dd" id="userDd"><a onclick="toast('Profile Settings')">Profile Settings</a><a onclick="toast('Organization Settings')">Organization Settings</a><hr><a style="color:#ef4444" onclick="toast('Signed out')">Sign out</a></div></div>
+  </div>
+</nav>
+<div class="tz" id="tz"><div class="tz-inner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Dates and times are shown in the carrier's timezone, <b>America/Detroit</b>. Your timezone is <b>Asia/Katmandu</b></span></div><span class="tz-x" onclick="this.parentElement.classList.add('hid')">✕</span></div>
+<div id="view"></div>
+</div>
+
+<!-- Create Invoice Modal -->
+<div class="modal-bg" id="createM"><div class="modal-box"><div class="modal-hdr"><h3>Create Invoice</h3><span class="mc" onclick="closeM('createM')">✕</span></div><div class="modal-bod"><div class="ff"><label>Invoice Name</label><input id="niName" placeholder="Enter invoice name"></div><div class="ff"><label>Flex ID</label><select id="niFlex"><option>Select a load...</option><option>FLEX-3627618A</option><option>FLEX-3627619A</option><option>FLEX-3698462B</option><option>FLEX-3698465A</option><option>FLEX-3736756B</option><option>FLEX-3775903A</option><option>FLEX-3828242C</option></select></div></div><div class="modal-ft"><button class="btn-o" onclick="closeM('createM')">Cancel</button><button class="btn-g" onclick="createInv()">Create</button></div></div></div>
+<!-- Add Charge Modal -->
+<div class="modal-bg" id="chargeM"><div class="modal-box"><div class="modal-hdr"><h3>Add New Charge</h3><span class="mc" onclick="closeM('chargeM')">✕</span></div><div class="modal-bod"><div class="ff"><label>Charge Type</label><select id="chType"><option>Drayage Base</option><option>Fuel Surcharge</option><option>Chassis Fee</option><option>Detention</option><option>Demurrage</option><option>Per Diem</option></select></div><div class="ff"><label>Amount (USD)</label><input id="chAmt" type="number" placeholder="0.00" step="0.01"></div></div><div class="modal-ft"><button class="btn-o" onclick="closeM('chargeM')">Cancel</button><button class="btn-g" onclick="addCharge()">Add Charge</button></div></div></div>
+
+<script>
+/* =============== DATA =============== */
+const LOADS=[
+{f:"FLEX-3627618A",c:"HLBU1331420",dot:0,rfp:"na",lfd:"May 23",lfds:"Estimated",ca:"May 12",cas:"Estimated",pa:"May 12",pas:"Estimated",pd:"May 12",pds:"Estimated",pl:"Cincinnati, OH",pls:"",dd:"May 13",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3627619A",c:"NIDU5216570",dot:0,rfp:"na",lfd:"May 22",lfds:"Estimated",ca:"May 8",cas:"Estimated",pa:"May 11",pas:"Estimated",pd:"May 11",pds:"Estimated",pl:"Cincinnati, OH",pls:"",dd:"May 13",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3627624A",c:"HAMU3918566",dot:0,rfp:"na",lfd:"May 23",lfds:"Estimated",ca:"May 12",cas:"Estimated",pa:"May 12",pas:"Estimated",pd:"May 12",pds:"Estimated",pl:"Cincinnati, OH",pls:"",dd:"May 13",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3698462B",c:"TGBU6053003",dot:0,rfp:"Apr 26 2:51pm UTC",lfd:"Apr 28",lfds:"Tuesday",ca:"Apr 26 2:51pm UTC",cas:"Confirmed",pa:"Apr 26",pas:"Cargo arrived",pd:"Apr 28",pds:"Estimated",pl:"CINCINNATI, OH",pls:"NORFOLK SOUTHERN (J404)",dd:"Apr 29",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3698465A",c:"TCKU6573891",dot:1,rfp:"Apr 26 2:31pm UTC",lfd:"Apr 28",lfds:"Tuesday",ca:"Apr 26 2:31pm UTC",cas:"Confirmed",pa:"Apr 25",pas:"Cargo arrived",pd:"Apr 28",pds:"Estimated",pl:"CINCINNATI, OH",pls:"NORFOLK SOUTHERN (J404)",dd:"Apr 29",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3736756B",c:"HLBU2218275",dot:0,rfp:"na",lfd:"May 22",lfds:"Estimated",ca:"May 7",cas:"Estimated",pa:"May 11",pas:"Estimated",pd:"May 11",pds:"Estimated",pl:"CINCINNATI, OH",pls:"NORFOLK SOUTHERN (J404)",dd:"May 13",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"DP World (Canada) Inc.",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3775903A",c:"CMAU3215080",dot:1,rfp:"Apr 14 12:00pm CDT",lfd:"Apr 16",lfds:"Thursday",ca:"Apr 14 12:00pm CDT",cas:"Confirmed",pa:"Apr 14",pas:"Cargo arrived",pd:"Apr 16 1:19pm MDT",pds:"Picked up",pl:"Salt Lake City, Utah",pls:"BNSF (H0G9)",dd:"Apr 17 4:37am MDT",dds:"Delivered",dl:"NORTH SALT LAKE, Utah",cl:"Daejin America Inc.",tn:"LBCT LLC",sz:"20 ft",nx:"Complete!"},
+{f:"FLEX-3783113C",c:"UACU8475416",dot:0,rfp:"na",lfd:"May 22",lfds:"Estimated",ca:"May 8",cas:"Estimated",pa:"May 11",pas:"Estimated",pd:"May 11",pds:"Estimated",pl:"Cincinnati, OH",pls:"",dd:"May 13",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft",nx:"Schedule Pickup"},
+{f:"FLEX-3796226A",c:"FANU1509581",dot:0,rfp:"na",lfd:"May 16",lfds:"Estimated",ca:"May 1",cas:"Estimated",pa:"May 5",pas:"Estimated",pd:"May 5",pds:"Estimated",pl:"CINCINNATI, OH",pls:"NORFOLK SOUTHERN (J404)",dd:"May 6",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3796233A",c:"MTSU9667400",dot:0,rfp:"na",lfd:"May 16",lfds:"Estimated",ca:"May 1",cas:"Estimated",pa:"May 5",pas:"Estimated",pd:"May 5",pds:"Estimated",pl:"CINCINNATI, OH",pls:"NORFOLK SOUTHERN (J404)",dd:"May 6",dds:"Estimated",dl:"Florence, Kentucky",cl:"Robert Bosch GmbH",tn:"HUSKY TERMINAL",sz:"40 ft HC",nx:"Schedule Pickup"},
+{f:"FLEX-3828242C",c:"GAOU6497533",dot:0,rfp:"check",lfd:"May 6",lfds:"",ca:"na",pa:"Apr 27 1:26am EDT",pas:"Picked up",pd:"Apr 27 1:26am EDT",pds:"Picked up",pl:"Latrobe, PA",pls:"Open Library of Richmond",dd:"Apr 27 1:32am EDT",dds:"Delivered",dl:"Pittsburgh, PA",cl:"Open Library of Richmond, Inc.",tn:"",sz:"40 ft HC",nx:"Complete!"}
+];
+
+const INV=[
+{id:1072783,nm:"Name unavailable",fl:"FLEX-3736756B",ct:"HLBU2218275",carrier:"Hapag-Lloyd",ss:"Scheduled",pn:"NORFOLK SOUTHERN CORP.",pa:"1276 W 8TH ST\nCINCINNATI, OH 45203\nUnited States",pf:"FIRMS Code: J404",pp:"Port 4102",dn:"Robert Bosch Automotive Steering (FleP)",da:"4175 Aero Parkway\nFlorence, Kentucky 41042\nUnited States",dc:"Robert Bosch GmbH",dh:"Hours: 24/5 Saturday till 1:00pm EST",ra:false,containers:[{id:"HLBU2218275",st:"Pending Delivery Completion",ck:false,charges:[{t:"Drayage Base",a:0,u:"Per Occurrence"},{t:"Fuel Surcharge",a:0,u:"Per Occurrence"}]}]},
+{id:1072782,nm:"Name unavailable",fl:"FLEX-3627619A",ct:"NIDU5216570",carrier:"Hapag-Lloyd",ss:"Scheduled",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH 45203",pf:"FIRMS Code: J404",pp:"",dn:"Robert Bosch Automotive Steering",da:"Florence, Kentucky 41042",dc:"Robert Bosch GmbH",dh:"",ra:false,containers:[{id:"NIDU5216570",st:"Pending Delivery Completion",ck:false,charges:[{t:"Drayage Base",a:0,u:"Per Occurrence"},{t:"Fuel Surcharge",a:0,u:"Per Occurrence"}]}]},
+{id:1072778,nm:"Name unavailable",fl:"FLEX-3828242C",ct:"GAOU6497533",carrier:"",ss:"Delivered",pn:"Latrobe, PA",pa:"",pf:"",pp:"",dn:"Pittsburgh, PA",da:"",dc:"Open Library of Richmond, Inc.",dh:"",ra:true,containers:[{id:"GAOU6497533",st:"Ready to submit",ck:true,charges:[{t:"Drayage Base",a:475,u:"Per Occurrence"},{t:"Fuel Surcharge",a:95,u:"Per Occurrence"}]}]},
+{id:1066761,nm:"250051967-101 REVISED",fl:"FLEX-3365684A",ct:"MSCU7741233",carrier:"MSC",ss:"Delivered",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH 45203",pf:"FIRMS Code: J404",pp:"Port 4102",dn:"Robert Bosch Automotive Steering (FleP)",da:"Florence, Kentucky 41042",dc:"Robert Bosch GmbH",dh:"Hours: 24/5 Saturday till 1:00pm EST",ra:true,containers:[
+  {id:"MSCU7741233",st:"Ready to submit",ck:true,charges:[{t:"Drayage Base",a:625,u:"Per Occurrence"},{t:"Fuel Surcharge",a:125,u:"Per Occurrence"}]},
+  {id:"TCLU4423100",st:"Deferred by carrier",ck:false,charges:[{t:"Drayage Base",a:625,u:"Per Occurrence"},{t:"Fuel Surcharge",a:125,u:"Per Occurrence"},{t:"Chassis Fee",a:45,u:"Per Day"}]}
+]},
+{id:1066272,nm:"250052123-101 REVISED",fl:"FLEX-3381679B",ct:"TCLU4423109",carrier:"MSC",ss:"Delivered",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH",pf:"FIRMS Code: J404",pp:"",dn:"Robert Bosch Automotive Steering",da:"Florence, Kentucky 41042",dc:"Robert Bosch GmbH",dh:"",ra:true,containers:[{id:"TCLU4423109",st:"Ready to submit",ck:true,charges:[{t:"Drayage Base",a:625,u:"Per Occurrence"},{t:"Fuel Surcharge",a:125,u:"Per Occurrence"}]}]},
+{id:1065000,nm:"UISACOM010816",fl:"FLEX-3617625A",ct:"OOLU8923441",carrier:"OOCL",ss:"Delivered",pn:"",pa:"",pf:"",pp:"",dn:"",da:"",dc:"",dh:"",ra:true,containers:[{id:"OOLU8923441",st:"Ready to submit",ck:true,charges:[{t:"Drayage Base",a:550,u:"Per Occurrence"}]}]},
+{id:1064999,nm:"UISACOU000057",fl:"FLEX-3494045B",ct:"MEDU2031554",carrier:"Evergreen",ss:"Delivered",pn:"",pa:"",pf:"",pp:"",dn:"",da:"",dc:"",dh:"",ra:true,containers:[{id:"MEDU2031554",st:"Ready to submit",ck:true,charges:[{t:"Drayage Base",a:480,u:"Per Occurrence"},{t:"Fuel Surcharge",a:96,u:"Per Occurrence"}]}]},
+{id:1072770,nm:"Name unavailable",fl:"FLEX-3796226A",ct:"FANU1509581",carrier:"Hapag-Lloyd",ss:"Scheduled",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH",pf:"",pp:"",dn:"Robert Bosch Automotive Steering",da:"Florence, Kentucky",dc:"Robert Bosch GmbH",dh:"",ra:false,containers:[{id:"FANU1509581",st:"Pending Delivery Completion",ck:false,charges:[{t:"Drayage Base",a:0,u:"Per Occurrence"},{t:"Fuel Surcharge",a:0,u:"Per Occurrence"}]}]},
+{id:1072769,nm:"Name unavailable",fl:"FLEX-3796233A",ct:"MTSU9667400",carrier:"Hapag-Lloyd",ss:"Scheduled",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH",pf:"",pp:"",dn:"Robert Bosch Automotive Steering",da:"Florence, Kentucky",dc:"Robert Bosch GmbH",dh:"",ra:false,containers:[{id:"MTSU9667400",st:"Pending Delivery Completion",ck:false,charges:[{t:"Drayage Base",a:0,u:"Per Occurrence"},{t:"Fuel Surcharge",a:0,u:"Per Occurrence"}]}]},
+{id:1072768,nm:"Name unavailable",fl:"FLEX-3775903A",ct:"CMAU3215080",carrier:"",ss:"Delivered",pn:"Salt Lake City, Utah",pa:"BNSF (H0G9)",pf:"",pp:"",dn:"NORTH SALT LAKE, Utah",da:"",dc:"Daejin America Inc.",dh:"",ra:true,containers:[{id:"CMAU3215080",st:"Ready to submit",ck:true,charges:[{t:"Drayage Base",a:850,u:"Per Occurrence"},{t:"Fuel Surcharge",a:170,u:"Per Occurrence"}]}]},
+{id:1072767,nm:"Name unavailable",fl:"FLEX-3698465A",ct:"TCKU6573891",carrier:"Hapag-Lloyd",ss:"Scheduled",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH",pf:"",pp:"",dn:"Robert Bosch Automotive Steering",da:"Florence, Kentucky",dc:"Robert Bosch GmbH",dh:"",ra:false,containers:[{id:"TCKU6573891",st:"Pending Delivery Completion",ck:false,charges:[{t:"Drayage Base",a:0,u:"Per Occurrence"},{t:"Fuel Surcharge",a:0,u:"Per Occurrence"}]}]},
+{id:1072766,nm:"Name unavailable",fl:"FLEX-3698462B",ct:"TGBU6053003",carrier:"Hapag-Lloyd",ss:"Scheduled",pn:"NORFOLK SOUTHERN CORP.",pa:"CINCINNATI, OH",pf:"",pp:"",dn:"Robert Bosch Automotive Steering",da:"Florence, Kentucky",dc:"Robert Bosch GmbH",dh:"",ra:false,containers:[{id:"TGBU6053003",st:"Pending Delivery Completion",ck:false,charges:[{t:"Drayage Base",a:0,u:"Per Occurrence"},{t:"Fuel Surcharge",a:0,u:"Per Occurrence"}]}]},
+];
+
+const WF=[{l:"Schedule Pickup",n:9,a:false},{l:"Confirm Pickup",n:0,a:true},{l:"Schedule Delivery",n:0},{l:"Confirm Delivery",n:0},{l:"Overdue Pickup Confirmations",n:0},{l:"Overdue Delivery Confirmations",n:0},{l:"Upload POD",n:0},{l:"Overdue POD Uploads",n:0},{l:"Confirm Empty Ready",n:0},{l:"Confirm Empty Return",n:0},{l:"SLA Misses",n:0}];
+
+/* =============== HELPERS =============== */
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(toast._);toast._=setTimeout(()=>t.hidden=true,2000)}
+function openM(id){document.getElementById(id).classList.add("open")}
+function closeM(id){document.getElementById(id).classList.remove("open")}
+function emag(){return`<svg class="mag" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="emg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs><circle cx="82" cy="82" r="55" fill="#f9fafb" stroke="#d1d5db" stroke-width="4"/><path d="M42 82a40 40 0 0080 0z" fill="url(#emg)" opacity=".5"/><rect x="120" y="120" width="45" height="12" rx="6" transform="rotate(45 120 120)" fill="#10b981"/><rect x="118" y="48" width="30" height="20" rx="5" fill="#10b981"/><text x="133" y="62" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">0</text></svg>`}
+function go(p){location.hash="#"+p}
+function cur(){return(location.hash.replace(/^#/,"")||"/loads").split("?")[0]}
+function setNav(p){document.querySelectorAll(".nl").forEach(a=>a.classList.remove("active"));const m={"/loads":"loads","/requests":"loads","/invoices":"invoices","/rates":"rates","/reports":"reports","/workflows":"workflows"};const el=document.querySelector(`[data-nav="${m[p]}"]`);if(el)el.classList.add("active")}
+function toggleDD(e){e.stopPropagation();document.getElementById("loadsDd").classList.toggle("open")}
+function invTotal(inv){return inv.containers.reduce((s,c)=>s+c.charges.reduce((s2,ch)=>s2+ch.a,0),0)}
+
+/* =============== ROUTER =============== */
+const R={"/loads":pgLoads,"/requests":pgReq,"/invoices":pgInv,"/rates":pgRates,"/reports":pgRep,"/workflows":pgWf};
+function nav(){const p=cur(),v=document.getElementById("view");v.innerHTML="";v.style.display="flex";v.style.flexDirection="column";(R[p]||pgLoads)(v);setNav(p);document.querySelectorAll(".dd.open").forEach(d=>d.classList.remove("open"));document.querySelectorAll(".user-dd.open").forEach(d=>d.classList.remove("open"))}
+window.addEventListener("hashchange",nav);
+document.addEventListener("click",()=>{document.querySelectorAll(".dd.open,.user-dd.open").forEach(d=>d.classList.remove("open"))});
+
+/* =============== LOADS =============== */
+let sortK="f",sortA=true,sT="";
+function pgLoads(root){
+  const tb=document.createElement("div");tb.className="tb";
+  tb.innerHTML=`<div class="fi-wrap"><span class="fi-icon">🔍</span><input class="fi" placeholder="Shipment ID" id="lSearch" value="${sT}"></div>
+  <button class="fb" onclick="toast('Next action')">Next action <span class="caret">▾</span></button>
+  <button class="fb" onclick="toast('Service type')">Service type <span class="caret">▾</span></button>
+  <button class="fb" onclick="toast('Last free day')">Last free day <b style="margin-left:4px">All dates</b> <span class="caret">▾</span></button>
+  <button class="fb" onclick="toast('Milestone Urgency')">Milestone Urgency <span class="caret">▾</span></button>
+  <button class="fb" onclick="toast('Add filter')">▼ Add</button>
+  <button class="fb" style="letter-spacing:1px;color:#9ca3af" onclick="toast('More')">···</button>
+  <div class="ms-panel" onclick="toast('Milestone reporting')"><span style="font-size:16px">‹</span><div><div class="ms-lbl">Milestone reporting performance</div></div><div><div class="perc">100%</div><div class="sub">this week</div></div></div>`;
+  root.appendChild(tb);
+  const tw=document.createElement("div");tw.className="table-wrap";
+  let rows=LOADS.filter(l=>{if(!sT)return true;const t=sT.toLowerCase();return l.f.toLowerCase().includes(t)||l.c.toLowerCase().includes(t)||(l.cl||"").toLowerCase().includes(t)});
+  rows.sort((a,b)=>{const av=(a[sortK]||""),bv=(b[sortK]||"");return sortA?av.localeCompare(bv):bv.localeCompare(av)});
+  const ar=sortA?" ↑":" ↓";
+  let h=`<table class="loads"><thead><tr><th style="min-width:170px" onclick="sortK='f';sortA=!sortA;nav()">Flex ID${sortK==='f'?ar:''}</th><th class="col-rfp" style="min-width:150px">Ready for Pickup</th><th style="min-width:80px">Tracking #</th><th style="min-width:80px">Reference #</th><th style="min-width:100px" onclick="sortK='lfd';sortA=!sortA;nav()">Last free day${sortK==='lfd'?ar:''}</th><th style="min-width:100px">Cargo available date</th><th style="min-width:100px">Port arrival date</th><th style="min-width:120px">Pickup date</th><th style="min-width:160px" onclick="sortK='nx';sortA=!sortA;nav()">Next action${sortK==='nx'?ar:''}</th><th class="col-gear" style="width:36px">⚙</th></tr></thead><tbody>`;
+  rows.forEach(l=>{
+    const rfp=l.rfp==="na"?`<span class="na-t">Not applicable</span><span class="na-i">?</span>`:l.rfp==="check"?`<span style="color:#10b981;font-size:16px">✓</span>`:`<span>${l.rfp}</span>`;
+    const nx=l.nx==="Complete!"?`<span class="complete-t">Complete!</span>`:`<button class="btn-sched" onclick="event.stopPropagation();toast('Scheduling pickup for ${l.f}')">Schedule Pickup</button>`;
+    const cas=l.cas==="Confirmed"?`<span class="d-sub" style="color:#10b981">${l.cas}</span>`:l.cas?`<span class="d-sub">${l.cas}</span>`:'';
+    const pas=l.pas==="Cargo arrived"?`<span class="d-sub" style="color:#3b82f6">${l.pas}</span>`:l.pas?`<span class="d-sub">${l.pas}</span>`:'';
+    h+=`<tr onclick="toast('Opening ${l.f}')"><td><div class="flex-cell"><span class="g-dot${l.dot?'':' inv'}"></span><div><span class="flex-link">${l.f}</span><div class="cont-id">${l.c}</div></div></div></td><td class="td-rfp">${rfp}</td><td><span class="dash">- -</span></td><td><span class="dash">- -</span><span class="pencil">✎</span></td><td>${l.lfd}${l.lfds?`<span class="d-sub">${l.lfds}</span>`:''}</td><td>${l.ca==="na"?`<span class="na-t">Not applicable</span><span class="na-i">?</span>`:l.ca}${cas}</td><td>${l.pa}${pas}</td><td><span class="d-grn">${l.pd}</span><span class="pencil">✎</span>${l.pds?`<span class="d-sub">${l.pds}</span>`:''}</td><td><div style="display:flex;align-items:center;gap:8px">${nx}<span class="chev" onclick="event.stopPropagation();toast('Quick view')">‹</span></div></td><td></td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  tw.innerHTML=h;root.appendChild(tw);
+  setTimeout(()=>{const si=document.getElementById("lSearch");if(si)si.oninput=e=>{sT=e.target.value;nav()}},0);
+}
+
+/* =============== REQUESTS =============== */
+function pgReq(root){root.innerHTML=`<div class="empty-ctr"><div class="spinner"></div></div>`;setTimeout(()=>{if(cur()==="/requests")root.innerHTML=`<div class="empty-ctr">${emag()}<h2>No active requests</h2><p>Customer load requests will appear here</p></div>`;},1500)}
+
+/* =============== INVOICES =============== */
+let selInv=null,invTab="draft";
+function pgInv(root){
+  const toolbar=document.createElement("div");toolbar.className="inv-tb";
+  toolbar.innerHTML=`<button class="btn-o" onclick="toast('Bulk Delete')">Bulk Delete</button><button class="btn-g" onclick="openM('createM')">Create Invoice</button>`;
+  root.appendChild(toolbar);
+  const shell=document.createElement("div");shell.className="inv-shell";
+
+  // Icon tabs
+  const icons=document.createElement("div");icons.className="icon-tabs";
+  [{k:"status",ic:"≡"},{k:"draft",ic:"✎"},{k:"sent",ic:"✈"},{k:"paid",ic:"$"}].forEach(t=>{
+    const b=document.createElement("button");b.className="it"+(t.k===invTab?" active":"");b.textContent=t.ic;b.dataset.tab=t.k;
+    b.onclick=()=>{invTab=t.k;selInv=null;pgInv(root)};icons.appendChild(b);
+  });
+  const hb=document.createElement("button");hb.className="it dark";hb.textContent="?";hb.onclick=()=>toast("Help");icons.appendChild(hb);
+  shell.appendChild(icons);
+
+  // Status sidebar
+  const ss=document.createElement("div");ss.className="status-side"+(invTab==="status"?" show":"");
+  ss.innerHTML=`<h4>STATUS</h4><div class="si-row" onclick="toast('Draft: 205')"><span>✎ Draft</span><span class="cnt">205</span></div><div class="si-row active" onclick="toast('Sent: 90')"><span>✈ Sent</span><span class="cnt">90</span></div><div class="si-row" onclick="toast('Paid: 1892')"><span>$ Paid</span><span class="cnt">1892</span></div><div class="si-row" onclick="toast('Disputed: 5')"><span>? Disputed</span><span class="cnt">5</span></div>`;
+  shell.appendChild(ss);
+
+  // List
+  const list=document.createElement("div");list.className="inv-list"+(invTab!=="status"?" show":"");list.id="invList";
+  const hdr=invTab==="draft"?"Draft":invTab==="sent"?"Sent":invTab==="paid"?"Paid":"Invoices";
+  let lh=`<div class="inv-list-hdr">${hdr}</div>`;
+  const items=invTab==="draft"?INV:[];
+  if(!items.length)lh+=`<div style="padding:40px 20px;text-align:center;color:#9ca3af;font-size:13px">No ${hdr.toLowerCase()} invoices</div>`;
+  else items.forEach(inv=>{lh+=`<div class="inv-item${selInv&&selInv.id===inv.id?' selected':''}" onclick="selInv=INV.find(i=>i.id===${inv.id});pgInv(document.getElementById('view'))"><div class="inv-item-name">${inv.nm}</div><div class="inv-item-flex">${inv.fl}</div></div>`;});
+  list.innerHTML=lh;shell.appendChild(list);
+
+  // Detail
+  const det=document.createElement("div");det.className="inv-detail";det.id="invDet";
+  if(!selInv){det.innerHTML=`<div class="empty-ctr">${emag()}<h2>No invoice selected</h2><p>Select an invoice from the left to view details</p></div>`;}
+  else{renderInvDetail(det,selInv);}
+  shell.appendChild(det);root.appendChild(shell);
+}
+
+function renderInvDetail(el,inv){
+  const tot=invTotal(inv);const isNm=inv.nm!=="Name unavailable";
+  el.innerHTML=`<div style="flex:1;overflow-y:auto">
+  <div class="banner banner-info"><span style="color:#3b82f6;flex-shrink:0">ⓘ</span><span>Additional validations have been added to drayage base rates and certain accessorials. If the rate is inaccurate, reach out to Transmission.Billing.Support@flexport.com.</span><span class="banner-x" onclick="this.parentElement.remove()">✕</span></div>
+  <div class="banner"><span style="flex-shrink:0">🏴</span><span>Please reference <a onclick="toast('MSC chassis billing')">this link</a> for updated MSC chassis billing protocol.</span></div>
+  ${!inv.ra?`<div class="banner banner-err"><span style="flex-shrink:0">⚠</span><span>Rates not available until a pickup is confirmed</span></div>`:''}
+  <div class="inv-header"><div class="inv-name" style="${isNm?'':'color:#10b981'}">${isNm?inv.nm:'Please enter invoice name'} <span class="ed" onclick="editNm()">✎</span></div>
+  <div class="inv-flexid">${inv.fl.replace(/[A-Z]$/,'')}</div><div class="inv-meta">Draft</div><div class="inv-meta">Issued &nbsp;- -</div><div class="inv-meta">Due &nbsp;<span class="inv-due-tag">⏱ Due date will based on submit time</span></div>
+  <div class="inv-acts"><button class="btn-del" onclick="delInv()">🗑 Delete Invoice</button><button class="btn-send" onclick="sendInv()">Send</button></div></div>
+  <div class="bill-sec"><div class="bill-row"><span class="bill-dot from"></span><div><span style="color:#6b7280">Bill from </span><b>Universal Intermodal</b><div style="font-size:12.5px;color:#6b7280;margin-top:2px">12341 E NINE MILE ROAD, Warren, MI, 48089, United States</div></div></div>
+  <div class="bill-row"><span class="bill-dot to"></span><div><span style="color:#6b7280">Bill to </span><b>Flexport LLC</b><div style="font-size:12.5px;color:#6b7280;margin-top:2px">100 California Street, Floor 5, SAN FRANCISCO, CA, 94111, United States</div></div></div></div>
+  ${tot===0?'<div class="info-msg"><span style="color:#3b82f6">ⓘ</span> No submittable line items yet</div>':''}
+  <div class="content-split"><div class="content-left">
+  ${inv.pn?`<div class="section"><div class="section-title">Route</div><div class="route-line"><span class="route-dot pk"></span><span class="route-lbl">Pickup</span><span class="route-bar"></span><span class="route-dot dl"></span><span class="route-lbl">Delivery</span></div>
+  <div class="route-cols"><div class="route-col"><h4>${inv.pn}</h4><div class="addr">${(inv.pa||'').replace(/\n/g,'<br>')}</div>${inv.pf?`<div style="font-size:12px;color:#9ca3af;margin-top:2px">${inv.pf}</div>`:''}${inv.pp?`<div class="verified">🏢 ${inv.pn} <span style="color:#10b981">✓</span></div><div style="font-size:12.5px;color:#6b7280;margin-top:2px">${inv.pp}</div>`:''}<div style="margin-top:10px"><div class="feat">✓ Not residential</div><div class="feat">✓ Needs appointment</div></div></div>
+  <div class="route-col"><h4>${inv.dn||'—'}</h4><div class="addr">${(inv.da||'').replace(/\n/g,'<br>')}</div>${inv.dc?`<div class="verified">🏢 ${inv.dc} <span style="color:#10b981">✓</span></div>${inv.dh?`<div style="font-size:12.5px;color:#6b7280;margin-top:2px">Business Hours: ${inv.dh}</div>`:''}`:''}
+  <div style="margin-top:10px"><div class="feat">✓ Not residential</div><div class="feat">✓ Needs appointment</div><div class="feat">✓ Does not need help unloading</div><div class="feat">✓ Has loading dock</div></div></div></div></div>`:``}
+  ${inv.carrier?`<div class="section"><div class="section-title">Shipment</div><div class="ship-grid"><div><div class="ship-lbl">Carrier</div><div class="ship-val">${inv.carrier}</div></div><div><div class="ship-lbl">Status</div><div class="ship-val">${inv.ss}</div></div></div></div>`:''}
+  <div class="section"><div class="section-title">Exceptions</div><div style="font-size:13px;color:#6b7280">No exceptions</div></div>
+  <div class="section"><div class="section-title">Related Deliveries</div><table class="rd-table"><thead><tr><th>FLEX ID</th><th>Status</th><th>Container</th></tr></thead><tbody><tr><td><a onclick="toast('Open ${inv.fl}')">${inv.fl}</a></td><td>${inv.ss==='Delivered'?'Complete':'Schedule Pickup'}</td><td>${inv.ct}</td></tr></tbody></table></div>
+  <div class="section"><div class="section-title">Documents</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#10b981;font-weight:500;cursor:pointer" onclick="toast('Downloading')">Delivery Order</span><span style="color:#6b7280;cursor:pointer" onclick="toast('Download')">⬇</span></div></div>
+  </div>
+  <div class="content-right">
+  <div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between"><span style="font-size:16px;font-weight:700">Invoice Details</span><span style="color:#10b981;font-weight:500;font-size:13px;cursor:pointer" onclick="openM('chargeM')">Add new charge</span></div>
+  <div class="col-hdr"><div class="c-item">Item</div><div class="c-qty">Quantity/Weight</div><div class="c-rate">Rate</div><div class="c-charge">Charge</div><div class="c-act"></div></div>
+  ${inv.containers.map((cnt,ci)=>`<div class="cnt-grp"><div class="cnt-chk"><input type="checkbox" id="ck${inv.id}_${ci}" ${cnt.ck?'checked':''} onchange="inv.containers[${ci}].ck=this.checked;toast(this.checked?'Ready':'Unchecked')"><label for="ck${inv.id}_${ci}">${cnt.id}</label></div><div class="cnt-st">${cnt.st}</div>
+  ${cnt.charges.map((ch,i)=>`<div class="li-card"><div class="li-body"><div class="li-left"><div class="li-nm">${ch.t}</div><div class="li-ct">Container/Flex ID: ${cnt.id}</div></div><div class="li-mid"></div><div class="li-rt"><div class="li-rv"><div class="val">${ch.a>0?ch.a.toFixed(2)+'USD':'Rate Unavailable'}</div><div class="unit">${ch.u}</div></div><div class="li-ch"><div class="amt">${ch.a>0?'USD '+ch.a.toFixed(2):''}</div></div><div class="li-icons"><button class="del" onclick="rmCh(${inv.id},${ci},${i})">🗑</button><button class="edt" onclick="edCh(${inv.id},${ci},${i})">✎</button></div></div></div><div class="li-ft">Created by Flexport Automation, Apr 24 2026 8:38 pm</div></div>`).join('')}</div>`).join('')}
+  ${tot>0?`<div class="total-bar"><div class="t-lbl">Total</div><div class="t-amt"><span class="usd-lbl">USD</span>${tot.toFixed(2)}</div></div>`:'<div style="padding:16px;font-size:13px;color:#9ca3af">No Submittable line items yet. Add a new charge for completed deliveries.</div>'}
+  </div></div></div>`;
+}
+
+function editNm(){const n=prompt("Invoice name:",selInv.nm==="Name unavailable"?"":selInv.nm);if(n&&n.trim()){selInv.nm=n.trim();pgInv(document.getElementById("view"));toast("Name updated")}}
+function delInv(){if(confirm("Delete this invoice?")){const i=INV.findIndex(x=>x.id===selInv.id);if(i>=0)INV.splice(i,1);selInv=null;pgInv(document.getElementById("view"));toast("Deleted")}}
+function sendInv(){const t=invTotal(selInv);if(t===0){toast("Cannot send: $0 total");return}toast(`Invoice sent — USD ${t.toFixed(2)}`);selInv=null;pgInv(document.getElementById("view"))}
+function createInv(){const nm=document.getElementById("niName").value.trim()||"Name unavailable";const fl=document.getElementById("niFlex").value;if(fl==="Select a load..."){toast("Select a Flex ID");return}INV.unshift({id:Date.now(),nm,fl,ct:"NEW"+Math.floor(Math.random()*999999),carrier:"",ss:"Draft",pn:"",pa:"",pf:"",pp:"",dn:"",da:"",dc:"",dh:"",ra:false,containers:[{id:"NEW"+Math.floor(Math.random()*999999),st:"Pending",ck:false,charges:[]}]});closeM("createM");selInv=INV[0];invTab="draft";pgInv(document.getElementById("view"));toast("Created")}
+function addCharge(){if(!selInv)return;const t=document.getElementById("chType").value;const a=parseFloat(document.getElementById("chAmt").value)||0;selInv.containers[0].charges.push({t,a,u:"Per Occurrence"});closeM("chargeM");pgInv(document.getElementById("view"));toast(t+" added")}
+function rmCh(id,ci,i){const inv=INV.find(x=>x.id===id);if(inv&&confirm("Remove charge?")){inv.containers[ci].charges.splice(i,1);selInv=inv;pgInv(document.getElementById("view"));toast("Removed")}}
+function edCh(id,ci,i){const inv=INV.find(x=>x.id===id);if(!inv)return;const ch=inv.containers[ci].charges[i];const v=prompt(`${ch.t} amount (USD):`,ch.a.toFixed(2));if(v!==null){ch.a=parseFloat(v)||0;selInv=inv;pgInv(document.getElementById("view"));toast("Updated to USD "+ch.a.toFixed(2))}}
+
+/* =============== RATES =============== */
+function pgRates(root){root.innerHTML=`<div style="flex:1;overflow-y:auto"><div class="rates-form"><div style="width:100%;font-size:15px;font-weight:700;margin-bottom:4px">Rate Viewer</div><div class="rf"><label>Charge ID (Optional)</label><input placeholder="Enter a charge ID"></div><div class="rf"><label>Origin (Recommended)</label><select><option>Zip</option><option>City</option></select><select style="margin-top:4px"><option>Origin Zip</option></select></div><div class="rf"><label>Destination (Optional)</label><select><option>ZIP</option><option>City</option></select><select style="margin-top:4px"><option>Destination Zip</option></select></div><div class="rf"><label>Mode (Optional)</label><span class="mode-tag">Drayage <span style="cursor:pointer;color:#9ca3af" onclick="this.parentElement.remove();toast('Cleared')">✕</span></span></div><div class="rf"><label>Charge Type (Optional)</label><select><option>Select a charge type</option></select></div><div class="rf"><label>Valid Range (Optional)</label><div style="display:flex;gap:6px;align-items:center"><input placeholder="Start date" style="flex:1"><span style="color:#9ca3af">to</span><input placeholder="End date" style="flex:1"></div></div></div><div style="height:3px;background:#10b981;width:40px;border-radius:2px"></div></div>`}
+
+/* =============== REPORTS =============== */
+function pgRep(root){root.innerHTML=`<div class="r403"><h1>403</h1><h2>Access Denied</h2><p>Sorry! You do not have permission to access this page.</p><div style="margin-top:20px"><a style="color:#10b981;font-weight:600;cursor:pointer" onclick="go('/loads')">← Take me home</a></div></div>`}
+
+/* =============== WORKFLOWS =============== */
+function pgWf(root){
+  const shell=document.createElement("div");shell.className="wf-shell";
+  const side=document.createElement("div");side.className="wf-side";
+  WF.forEach(w=>{const d=document.createElement("div");d.className="wf-item"+(w.a?" active":"");d.innerHTML=`<span>${w.l}</span><span style="color:#9ca3af;font-weight:600">${w.n}</span>`;d.onclick=()=>{side.querySelectorAll(".wf-item").forEach(x=>x.classList.remove("active"));d.classList.add("active");toast(w.l)};side.appendChild(d)});
+  shell.appendChild(side);
+  const main=document.createElement("div");main.className="empty-ctr";main.style.flex="1";
+  main.innerHTML=`${emag()}<h2>Great work!</h2><p>All tasks completed</p>`;
+  shell.appendChild(main);root.appendChild(shell);
+}
+
+/* =============== GLOBAL SEARCH =============== */
+document.getElementById("globalSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){const q=e.target.value.trim();if(!q)return;const m=LOADS.find(l=>l.f.toLowerCase().includes(q.toLowerCase())||l.c.toLowerCase().includes(q.toLowerCase()));if(m){go("/loads");toast("Found: "+m.f)}else{toast("No results for '"+q+"'")}}});
+
+/* =============== INIT =============== */
+if(!location.hash)location.hash="#/loads";
+nav();
+</script>
+</body>
+</html>
